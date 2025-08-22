@@ -1,0 +1,986 @@
+{
+  "type": "workflow_collections",
+  "data": [
+    {
+      "@context": "/api/3/contexts/WorkflowCollection",
+      "@type": "WorkflowCollection",
+      "name": "00 - Withnetworks",
+      "description": null,
+      "visible": true,
+      "image": null,
+      "id": 104,
+      "createDate": 1755765451.262053,
+      "modifyDate": 1755765451.262053,
+      "deletedAt": null,
+      "importedBy": [],
+      "recordTags": [],
+      "workflows": [
+        {
+          "@type": "Workflow",
+          "triggerLimit": null,
+          "name": "withConnector_AhnLab-Merge and Delete",
+          "aliasName": null,
+          "tag": null,
+          "description": "(Schedule)정책 파일 병합·삭제·재업로드",
+          "isActive": true,
+          "debug": true,
+          "singleRecordExecution": false,
+          "remoteExecutableFlag": false,
+          "parameters": [],
+          "synchronous": false,
+          "lastModifyDate": 1755766384,
+          "collection": "/api/3/workflow_collections/23c01d17-e124-4e9a-994d-e677b4672581",
+          "versions": [],
+          "triggerStep": "/api/3/workflow_steps/8340ef4e-2fd1-4471-9962-4073c1d01063",
+          "steps": [
+            {
+              "@type": "WorkflowStep",
+              "name": "Delete_Attachment",
+              "description": null,
+              "arguments": {
+                "params": {
+                  "iri": "{{vars.item['@id']}}",
+                  "body": "",
+                  "method": "DELETE"
+                },
+                "version": "3.2.6",
+                "for_each": {
+                  "item": "{{vars.steps.Find_Attachment_by_Filter}}",
+                  "parallel": false,
+                  "condition": ""
+                },
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "FSR: Make FortiSOAR API Call",
+                "step_variables": []
+              },
+              "status": null,
+              "top": "640",
+              "left": "280",
+              "stepType": "/api/3/workflow_step_types/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+              "group": null,
+              "uuid": "a836c9ff-7b23-49c3-8550-703f1e5c75f3"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Extract_File_IRI",
+              "description": null,
+              "arguments": {
+                "config": "b5195722-9917-4e6e-ac0f-cddab46620ee",
+                "params": {
+                  "python_function": "data = {{vars.steps.Find_Attachment_by_Filter}}\n\nfile_ids = [item.get('file', {}).get('@id') for item in data if item.get('file')]\nprint(file_ids)"
+                },
+                "version": "2.1.3",
+                "connector": "code-snippet",
+                "operation": "python_inline_code_editor",
+                "operationTitle": "Execute Python Code",
+                "step_variables": []
+              },
+              "status": null,
+              "top": "280",
+              "left": "460",
+              "stepType": "/api/3/workflow_step_types/1fdd14cc-d6b4-4335-a3af-ab49c8ed2fd8",
+              "group": null,
+              "uuid": "b4828996-d1b9-4d8d-a659-2fe81560316e"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Fail_Check",
+              "description": null,
+              "arguments": {
+                "conditions": [
+                  {
+                    "option": "failed",
+                    "step_iri": "/api/3/workflow_steps/ff9e538f-05e7-4a0f-b4b1-173a4bbb4b93",
+                    "condition": "{{ vars.steps.Merge_and_Delete.data.success == false }}",
+                    "step_name": "No_Operation"
+                  },
+                  {
+                    "option": "success",
+                    "step_iri": "/api/3/workflow_steps/a836c9ff-7b23-49c3-8550-703f1e5c75f3",
+                    "condition": "{{ vars.steps.Merge_and_Delete.data.success == true }}",
+                    "step_name": "Delete_Attachment"
+                  }
+                ],
+                "step_variables": []
+              },
+              "status": null,
+              "top": "500",
+              "left": "460",
+              "stepType": "/api/3/workflow_step_types/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+              "group": null,
+              "uuid": "7d722cb9-ba7f-4a0a-b142-0faae07f9550"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Find_Attachment_by_Filter",
+              "description": null,
+              "arguments": {
+                "query": {
+                  "sort": [],
+                  "limit": 30,
+                  "logic": "AND",
+                  "filters": [
+                    {
+                      "type": "primitive",
+                      "field": "description",
+                      "value": "%{{vars.delete_description}}%",
+                      "operator": "like",
+                      "_operator": "like"
+                    }
+                  ]
+                },
+                "module": "attachments?$limit=30",
+                "step_variables": []
+              },
+              "status": null,
+              "top": "160",
+              "left": "460",
+              "stepType": "/api/3/workflow_step_types/b593663d-7d13-40ce-a3a3-96dece928770",
+              "group": null,
+              "uuid": "cd492d1c-9bbf-4b81-bc1a-bae333511cfb"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Merge_and_Delete",
+              "description": null,
+              "arguments": {
+                "name": "withConnector_AhnLab",
+                "config": "d977c8aa-b801-4a77-962c-a824980e4d27",
+                "params": {
+                  "enddate": "250819",
+                  "fileiris": "{{vars.steps.Extract_File_IRI.data['code_output']}}",
+                  "loginattempt": "3",
+                  "mergedescription": "{{vars.merge_description}}",
+                  "deletedescription": "{{vars.delete_description}}"
+                },
+                "version": "1.1.0",
+                "connector": "withConnector_AhnLab",
+                "operation": "delete_merge",
+                "operationTitle": "delete_merge",
+                "pickFromTenant": false,
+                "step_variables": []
+              },
+              "status": null,
+              "top": "380",
+              "left": "460",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "4942463c-614e-43f6-beba-9a9570feb45b"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "No_Operation",
+              "description": null,
+              "arguments": {
+                "params": [],
+                "version": "3.2.6",
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "step_variables": []
+              },
+              "status": null,
+              "top": "640",
+              "left": "660",
+              "stepType": "/api/3/workflow_step_types/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+              "group": null,
+              "uuid": "ff9e538f-05e7-4a0f-b4b1-173a4bbb4b93"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Set_Description",
+              "description": null,
+              "arguments": {
+                "merge_description": "withConnector_AhnLab Merge 1.0.3 connector test",
+                "delete_description": "Ahnlab"
+              },
+              "status": null,
+              "top": "60",
+              "left": "460",
+              "stepType": "/api/3/workflow_step_types/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+              "group": null,
+              "uuid": "743a0a93-09da-4904-b888-5eab0f0891a7"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Start",
+              "description": null,
+              "arguments": {
+                "route": "3bb4a90d-82e0-4d2f-94e0-7448e09b5a97",
+                "resources": [
+                  "alerts"
+                ],
+                "__triggerLimit": true,
+                "inputVariables": [],
+                "step_variables": {
+                  "input": {
+                    "params": [],
+                    "records": "{{vars.input.records}}"
+                  }
+                },
+                "triggerOnSource": true,
+                "executeButtonText": "Execute",
+                "noRecordExecution": true,
+                "showToasterMessage": {
+                  "visible": false,
+                  "messageVisible": true
+                },
+                "triggerOnReplicate": false,
+                "singleRecordExecution": false
+              },
+              "status": null,
+              "top": "60",
+              "left": "60",
+              "stepType": "/api/3/workflow_step_types/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+              "group": null,
+              "uuid": "8340ef4e-2fd1-4471-9962-4073c1d01063"
+            }
+          ],
+          "routes": [
+            {
+              "@type": "WorkflowRoute",
+              "name": "Copy of Find_Attachment_by_Filter -> Extract_File_IRI",
+              "targetStep": "/api/3/workflow_steps/b4828996-d1b9-4d8d-a659-2fe81560316e",
+              "sourceStep": "/api/3/workflow_steps/cd492d1c-9bbf-4b81-bc1a-bae333511cfb",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "18eb6053-56e4-4def-9e26-6bb39dce0112"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Extract_File_IRI -> te",
+              "targetStep": "/api/3/workflow_steps/4942463c-614e-43f6-beba-9a9570feb45b",
+              "sourceStep": "/api/3/workflow_steps/b4828996-d1b9-4d8d-a659-2fe81560316e",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "af582bf9-03eb-4569-9f80-7fc0d8b6b9c5"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Fail_Check -> Delete_Attachment",
+              "targetStep": "/api/3/workflow_steps/a836c9ff-7b23-49c3-8550-703f1e5c75f3",
+              "sourceStep": "/api/3/workflow_steps/7d722cb9-ba7f-4a0a-b142-0faae07f9550",
+              "label": "success",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "4d1a5123-b2e1-4e3f-a5c2-d36e669ed562"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "fail check -> no oper",
+              "targetStep": "/api/3/workflow_steps/ff9e538f-05e7-4a0f-b4b1-173a4bbb4b93",
+              "sourceStep": "/api/3/workflow_steps/7d722cb9-ba7f-4a0a-b142-0faae07f9550",
+              "label": "failed",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "8ead79cb-6e73-4a1e-b292-0b8cbd0b094c"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Set_Description -> Copy of Find_Attachment_by_Filter",
+              "targetStep": "/api/3/workflow_steps/cd492d1c-9bbf-4b81-bc1a-bae333511cfb",
+              "sourceStep": "/api/3/workflow_steps/743a0a93-09da-4904-b888-5eab0f0891a7",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "e19a24b1-3c45-4663-b3ca-9b8bc7a4218b"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Start -> descriptions",
+              "targetStep": "/api/3/workflow_steps/743a0a93-09da-4904-b888-5eab0f0891a7",
+              "sourceStep": "/api/3/workflow_steps/8340ef4e-2fd1-4471-9962-4073c1d01063",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "2dfb8897-e962-4368-a666-46ec82c05ec5"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "te -> Fail_Check",
+              "targetStep": "/api/3/workflow_steps/7d722cb9-ba7f-4a0a-b142-0faae07f9550",
+              "sourceStep": "/api/3/workflow_steps/4942463c-614e-43f6-beba-9a9570feb45b",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "4a2a550c-9fa6-4e86-b907-a557dd2a7ebe"
+            }
+          ],
+          "groups": [
+            {
+              "@type": "WorkflowGroup",
+              "name": "Connector 설명",
+              "description": "- 로그인은 Connector에 포함\n- 전체 IRI 값을 순회하며 delete_description 과 end_date 가 일치하는 파일을 읽어 병합한 뒤 재업로드\n- 재업로드 시 merge_description 값을 함께 지정\n- 이후 병합된 원본 파일은 모두 삭제",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "360",
+              "left": "760",
+              "height": "154",
+              "width": "495",
+              "uuid": "81416c91-783d-4647-91ca-8ddf2e77020f",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Fail Check",
+              "description": "일치하는 파일이 없으면 Fail 이 출력되며, FortiSOAR Attachment 내 파일은 삭제되지 않도록 보호",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "500",
+              "left": "60",
+              "height": "81",
+              "width": "382",
+              "uuid": "5994edfd-fb2a-4a8f-8a89-33f79522fa32",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "File Attachment",
+              "description": "- Find_All_Attachment_by_Filter : Attachment 모듈에 업로드된 Description으로 분류된 파일의 IRI 값을 Connector에 전달하는 스텝",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "240",
+              "left": "760",
+              "height": "91",
+              "width": "496",
+              "uuid": "07631146-1fbd-47e4-924f-852b9e5af680",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Set_Description 설명",
+              "description": "- merge_description : 파일을 병합하여 업로드할 때 생성되는 Description 값을 지정\n- delete_description : 삭제할 파일을 찾기 위해 입력하는 Keyword 값",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "40",
+              "left": "760",
+              "height": "103",
+              "width": "498",
+              "uuid": "32c16e32-816f-4e72-9540-ce2ab1af9a81",
+              "recordTags": []
+            }
+          ],
+          "priority": "/api/3/picklists/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+          "uuid": "3aba4531-9dfa-499c-ae9d-903a9977e76a",
+          "id": 1084,
+          "owners": [],
+          "isPrivate": false,
+          "deletedAt": null,
+          "importedBy": [],
+          "recordTags": []
+        },
+        {
+          "@type": "Workflow",
+          "triggerLimit": null,
+          "name": "withConnector_AhnLab-Upload",
+          "aliasName": null,
+          "tag": null,
+          "description": "정책 파일 업로드",
+          "isActive": true,
+          "debug": true,
+          "singleRecordExecution": false,
+          "remoteExecutableFlag": false,
+          "parameters": [
+            "file_iri",
+            "description"
+          ],
+          "synchronous": false,
+          "lastModifyDate": 1755766290,
+          "collection": "/api/3/workflow_collections/23c01d17-e124-4e9a-994d-e677b4672581",
+          "versions": [],
+          "triggerStep": "/api/3/workflow_steps/e30bea8c-d5de-4370-be00-83a369597767",
+          "steps": [
+            {
+              "@type": "WorkflowStep",
+              "name": "Alert_On_2_Failures",
+              "description": null,
+              "arguments": {
+                "params": [],
+                "version": "3.2.6",
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "step_variables": []
+              },
+              "status": null,
+              "top": "660",
+              "left": "900",
+              "stepType": "/api/3/workflow_step_types/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+              "group": null,
+              "uuid": "5ec423f7-4b62-4008-a5f9-3a6d5536364f"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Alert_On_3_Failures",
+              "description": null,
+              "arguments": {
+                "when": "{{vars.steps.Upload_and_Bulk_3.data.success == false}}",
+                "params": [],
+                "version": "3.2.6",
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "step_variables": []
+              },
+              "status": null,
+              "top": "420",
+              "left": "560",
+              "stepType": "/api/3/workflow_step_types/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+              "group": null,
+              "uuid": "d27e294b-81bc-4345-be31-afb153f253dd"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Check_Login",
+              "description": null,
+              "arguments": {
+                "conditions": [
+                  {
+                    "option": "Fail",
+                    "step_iri": "/api/3/workflow_steps/acf87f92-82d0-40b4-bcf6-9b78ca739029",
+                    "condition": "{{ vars.steps.Upload_and_Bulk.data.success == false }}",
+                    "step_name": "Upload_and_Bulk_2"
+                  },
+                  {
+                    "option": "Success",
+                    "default": true,
+                    "step_iri": "/api/3/workflow_steps/23bab309-d331-479a-ba7b-c64e1a408ed9",
+                    "step_name": "Login_Success"
+                  }
+                ],
+                "step_variables": []
+              },
+              "status": null,
+              "top": "300",
+              "left": "900",
+              "stepType": "/api/3/workflow_step_types/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+              "group": null,
+              "uuid": "a6e398bf-0b40-4864-8ef2-289cc47da81a"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Copy of Check_Login",
+              "description": null,
+              "arguments": {
+                "conditions": [
+                  {
+                    "option": "Fail",
+                    "step_iri": "/api/3/workflow_steps/5ec423f7-4b62-4008-a5f9-3a6d5536364f",
+                    "condition": "{{ vars.steps.Upload_and_Bulk_2.data.success == false }}",
+                    "step_name": "Alert_On_2_Failures"
+                  },
+                  {
+                    "option": "Success",
+                    "default": true,
+                    "step_iri": "/api/3/workflow_steps/0faddc10-12cf-4d40-9cb3-45fea7bd776a",
+                    "step_name": "Copy of Login_Success"
+                  }
+                ],
+                "step_variables": []
+              },
+              "status": null,
+              "top": "540",
+              "left": "900",
+              "stepType": "/api/3/workflow_step_types/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+              "group": null,
+              "uuid": "1b0f2f0b-542c-473b-a35c-c5614566d379"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Login_Success",
+              "description": null,
+              "arguments": {
+                "params": [],
+                "version": "3.2.6",
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "step_variables": []
+              },
+              "status": null,
+              "top": "300",
+              "left": "1320",
+              "stepType": "/api/3/workflow_step_types/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+              "group": null,
+              "uuid": "23bab309-d331-479a-ba7b-c64e1a408ed9"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Login_Success2",
+              "description": null,
+              "arguments": {
+                "params": [],
+                "version": "3.2.6",
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "step_variables": []
+              },
+              "status": null,
+              "top": "540",
+              "left": "1320",
+              "stepType": "/api/3/workflow_step_types/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+              "group": null,
+              "uuid": "0faddc10-12cf-4d40-9cb3-45fea7bd776a"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Set_Description",
+              "description": null,
+              "arguments": {
+                "file_iri": "{{vars.input.params['file_iri']}}",
+                "upload_description": "{{vars.input.params.description}}"
+              },
+              "status": null,
+              "top": "160",
+              "left": "560",
+              "stepType": "/api/3/workflow_step_types/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+              "group": null,
+              "uuid": "3d69c20a-a9a9-46b5-aa6c-e3ea901bc197"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Start",
+              "description": null,
+              "arguments": {
+                "__triggerLimit": true,
+                "step_variables": {
+                  "input": {
+                    "params": []
+                  }
+                },
+                "triggerOnSource": true,
+                "triggerOnReplicate": false
+              },
+              "status": null,
+              "top": "40",
+              "left": "560",
+              "stepType": "/api/3/workflow_step_types/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+              "group": null,
+              "uuid": "e30bea8c-d5de-4370-be00-83a369597767"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Upload_and_Bulk_2",
+              "description": null,
+              "arguments": {
+                "name": "withConnector_AhnLab",
+                "config": "debded47-1412-49d1-9339-d2cb233d6d98",
+                "params": {
+                  "fileiri": "{{vars.file_iri}}",
+                  "description": "{{vars.upload_description}}",
+                  "loginattempt": "2",
+                  "uploaddescription": "{{vars.upload_description}}"
+                },
+                "version": "1.0.1",
+                "connector": "withConnector_AhnLab",
+                "operation": "upload",
+                "operationTitle": "upload",
+                "pickFromTenant": false,
+                "step_variables": []
+              },
+              "status": null,
+              "top": "440",
+              "left": "900",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "acf87f92-82d0-40b4-bcf6-9b78ca739029"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Upload_and_Bulk_3",
+              "description": null,
+              "arguments": {
+                "name": "withConnector_AhnLab",
+                "config": "d977c8aa-b801-4a77-962c-a824980e4d27",
+                "params": {
+                  "fileiri": "{{vars.file_iri}}",
+                  "loginattempt": "3",
+                  "uploaddescription": "{{vars.upload_description}}"
+                },
+                "version": "1.1.0",
+                "connector": "withConnector_AhnLab",
+                "operation": "upload",
+                "operationTitle": "upload",
+                "pickFromTenant": false,
+                "step_variables": []
+              },
+              "status": null,
+              "top": "300",
+              "left": "560",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "bca3b28f-a23b-4477-a4d1-040ad2a0cc14"
+            }
+          ],
+          "routes": [
+            {
+              "@type": "WorkflowRoute",
+              "name": "chk_login -> fail",
+              "targetStep": "/api/3/workflow_steps/23bab309-d331-479a-ba7b-c64e1a408ed9",
+              "sourceStep": "/api/3/workflow_steps/a6e398bf-0b40-4864-8ef2-289cc47da81a",
+              "label": "Success",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "97fc725a-a1eb-4c65-91f7-4df60920e597"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "chk_login -> Upload_and_Bulk_2",
+              "targetStep": "/api/3/workflow_steps/acf87f92-82d0-40b4-bcf6-9b78ca739029",
+              "sourceStep": "/api/3/workflow_steps/a6e398bf-0b40-4864-8ef2-289cc47da81a",
+              "label": "Fail",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "6793bfd5-e17f-4cb3-b43c-855c844659ad"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Copy of Check_Login -> Alert_On_2_Failures",
+              "targetStep": "/api/3/workflow_steps/5ec423f7-4b62-4008-a5f9-3a6d5536364f",
+              "sourceStep": "/api/3/workflow_steps/1b0f2f0b-542c-473b-a35c-c5614566d379",
+              "label": "Fail",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "88f65ab5-84ac-435a-b143-76178d1fd68a"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Copy of Check_Login -> Copy of Login_Success",
+              "targetStep": "/api/3/workflow_steps/0faddc10-12cf-4d40-9cb3-45fea7bd776a",
+              "sourceStep": "/api/3/workflow_steps/1b0f2f0b-542c-473b-a35c-c5614566d379",
+              "label": "Success",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "160a1296-a8e3-49c8-9972-787369539c0f"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Set_Description -> w",
+              "targetStep": "/api/3/workflow_steps/bca3b28f-a23b-4477-a4d1-040ad2a0cc14",
+              "sourceStep": "/api/3/workflow_steps/3d69c20a-a9a9-46b5-aa6c-e3ea901bc197",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "0d06632e-2108-4c54-a85a-1d6e4c5b609c"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Start -> Set_Description",
+              "targetStep": "/api/3/workflow_steps/3d69c20a-a9a9-46b5-aa6c-e3ea901bc197",
+              "sourceStep": "/api/3/workflow_steps/e30bea8c-d5de-4370-be00-83a369597767",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "0c51f274-6b8c-4ede-9bda-26c427d79d8e"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Upload_and_Bulk_2 -> Copy of Check_Login",
+              "targetStep": "/api/3/workflow_steps/1b0f2f0b-542c-473b-a35c-c5614566d379",
+              "sourceStep": "/api/3/workflow_steps/acf87f92-82d0-40b4-bcf6-9b78ca739029",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "9d2e1104-52ef-4223-8357-b3c5d816248a"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "w -> Alert_On_3_Failures",
+              "targetStep": "/api/3/workflow_steps/d27e294b-81bc-4345-be31-afb153f253dd",
+              "sourceStep": "/api/3/workflow_steps/bca3b28f-a23b-4477-a4d1-040ad2a0cc14",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "d6c12ba4-308a-4d36-b6a8-d9e9fc15b621"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "w -> Check_Login",
+              "targetStep": "/api/3/workflow_steps/a6e398bf-0b40-4864-8ef2-289cc47da81a",
+              "sourceStep": "/api/3/workflow_steps/bca3b28f-a23b-4477-a4d1-040ad2a0cc14",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "3f2456e8-c329-4f28-9cae-97ce07d8bde2"
+            }
+          ],
+          "groups": [
+            {
+              "@type": "WorkflowGroup",
+              "name": "Connector 설명",
+              "description": "- 로그인은 Connector에 포함\n- file_iri : Attachment에 업로드된 파일의 @id 값\n- login_attempt : 로그인 재시도 횟수를 지정 (3회 실패 시 Alert, 5회 실패 시 최종 Alert 발생)\n- Alert 스텝 : 기존 Alert 스텝은 본 로직으로 대체",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "260",
+              "left": "80",
+              "height": "151",
+              "width": "465",
+              "uuid": "5f65e594-2ac9-4739-a811-1279fb32b03d",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Referenced Playbook에 필요한 파라미터",
+              "description": "- Attachment에 업로드된 파일의 @id 값\n- Upload_and_Bulk 스텝의 IRI 값으로 사용됨\n- Sample-Create Attachment Playbook 참고",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "20",
+              "left": "820",
+              "height": "116",
+              "width": "455",
+              "uuid": "11e5a2cd-dee9-4a1f-bf33-df72f54e3917",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "upload_description",
+              "description": "파일 업로드 시, 해당 Description 값으로 검색, 병합, 삭제 여부를 구분",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "160",
+              "left": "820",
+              "height": "85",
+              "width": "455",
+              "uuid": "16731871-7dff-4097-8e8b-6d019e34d1d9",
+              "recordTags": []
+            }
+          ],
+          "priority": "/api/3/picklists/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+          "uuid": "7d6b4f47-d31b-425b-80fe-371cfe70db38",
+          "id": 1083,
+          "owners": [],
+          "isPrivate": false,
+          "deletedAt": null,
+          "importedBy": [],
+          "recordTags": []
+        },
+        {
+          "@type": "Workflow",
+          "triggerLimit": null,
+          "name": "Sample-Create Attachment",
+          "aliasName": null,
+          "tag": null,
+          "description": "실행 샘플 플레이북(파일 업로드)",
+          "isActive": true,
+          "debug": true,
+          "singleRecordExecution": false,
+          "remoteExecutableFlag": false,
+          "parameters": [],
+          "synchronous": false,
+          "lastModifyDate": 1755766269,
+          "collection": "/api/3/workflow_collections/23c01d17-e124-4e9a-994d-e677b4672581",
+          "versions": [],
+          "triggerStep": "/api/3/workflow_steps/f342d90e-0ef4-4f7e-bb9f-6a8ecdd41196",
+          "steps": [
+            {
+              "@type": "WorkflowStep",
+              "name": "Copy of Upload",
+              "description": null,
+              "arguments": {
+                "arguments": {
+                  "file_iri": "{{vars.steps.test[0].file['@id']}}",
+                  "description": "{{vars.steps.test[0].description}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "pass_parent_env": false,
+                "pass_input_record": false,
+                "workflowReference": "/api/3/workflows/7d6b4f47-d31b-425b-80fe-371cfe70db38"
+              },
+              "status": null,
+              "top": "200",
+              "left": "1160",
+              "stepType": "/api/3/workflow_step_types/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+              "group": null,
+              "uuid": "e05e8f71-78cb-4274-89e6-eb01133d05ff"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Create_Attachment",
+              "description": null,
+              "arguments": {
+                "params": {
+                  "name": "blacklist_bulk",
+                  "filename": "blacklist_bulk.csv",
+                  "file_path": "/tmp/blacklist_bulk.csv",
+                  "description": "withConnector_AhnLab 1.1.0 connector",
+                  "create_attachment": true
+                },
+                "version": "3.2.6",
+                "connector": "cyops_utilities",
+                "operation": "upload_file_to_cyops",
+                "operationTitle": "File: Upload a file in the system and Create an Attachment",
+                "step_variables": []
+              },
+              "status": null,
+              "top": "40",
+              "left": "380",
+              "stepType": "/api/3/workflow_step_types/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+              "group": null,
+              "uuid": "b2838c8e-4680-41d4-b46a-220047632477"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Start",
+              "description": null,
+              "arguments": {
+                "route": "852147db-ac23-4d9b-8340-7f213009f322",
+                "resources": [
+                  "alerts"
+                ],
+                "__triggerLimit": true,
+                "inputVariables": [],
+                "step_variables": {
+                  "input": {
+                    "params": [],
+                    "records": "{{vars.input.records}}"
+                  }
+                },
+                "triggerOnSource": true,
+                "executeButtonText": "Execute",
+                "noRecordExecution": true,
+                "showToasterMessage": {
+                  "visible": false,
+                  "messageVisible": true
+                },
+                "triggerOnReplicate": false,
+                "singleRecordExecution": false
+              },
+              "status": null,
+              "top": "40",
+              "left": "40",
+              "stepType": "/api/3/workflow_step_types/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+              "group": null,
+              "uuid": "f342d90e-0ef4-4f7e-bb9f-6a8ecdd41196"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "test",
+              "description": null,
+              "arguments": {
+                "query": {
+                  "sort": [],
+                  "limit": 30,
+                  "logic": "AND",
+                  "filters": [
+                    {
+                      "type": "primitive",
+                      "field": "name",
+                      "value": "test-w",
+                      "operator": "eq",
+                      "_operator": "eq"
+                    }
+                  ]
+                },
+                "module": "attachments?$limit=30",
+                "step_variables": []
+              },
+              "status": null,
+              "top": "320",
+              "left": "220",
+              "stepType": "/api/3/workflow_step_types/b593663d-7d13-40ce-a3a3-96dece928770",
+              "group": null,
+              "uuid": "1e846d33-7869-4528-86af-42f82ff75d47"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Upload",
+              "description": null,
+              "arguments": {
+                "arguments": {
+                  "file_iri": "{{vars.steps.Create_Attachment.data.file['@id']}}",
+                  "description": "{{vars.steps.Create_Attachment.data.description}}"
+                },
+                "apply_async": false,
+                "step_variables": [],
+                "pass_parent_env": false,
+                "pass_input_record": false,
+                "workflowReference": "/api/3/workflows/7d6b4f47-d31b-425b-80fe-371cfe70db38"
+              },
+              "status": null,
+              "top": "40",
+              "left": "740",
+              "stepType": "/api/3/workflow_step_types/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+              "group": null,
+              "uuid": "e2b34ef2-42a4-43f1-9065-358b9e4bbab5"
+            }
+          ],
+          "routes": [
+            {
+              "@type": "WorkflowRoute",
+              "name": "Create_Attachment -> upload",
+              "targetStep": "/api/3/workflow_steps/e2b34ef2-42a4-43f1-9065-358b9e4bbab5",
+              "sourceStep": "/api/3/workflow_steps/b2838c8e-4680-41d4-b46a-220047632477",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "0d45deb9-40a0-4d2c-a8e8-7ec1afd0bbba"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Start -> test",
+              "targetStep": "/api/3/workflow_steps/1e846d33-7869-4528-86af-42f82ff75d47",
+              "sourceStep": "/api/3/workflow_steps/f342d90e-0ef4-4f7e-bb9f-6a8ecdd41196",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "29b61c65-44b6-43a3-9f40-a296573df69e"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "test -> Copy of Upload",
+              "targetStep": "/api/3/workflow_steps/e05e8f71-78cb-4274-89e6-eb01133d05ff",
+              "sourceStep": "/api/3/workflow_steps/1e846d33-7869-4528-86af-42f82ff75d47",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "0e62d925-0377-4d8e-87b3-282832589fbf"
+            }
+          ],
+          "groups": [],
+          "priority": "/api/3/picklists/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+          "uuid": "b1413696-7c84-444e-ad5b-ce2e32f4c979",
+          "id": 1082,
+          "owners": [],
+          "isPrivate": false,
+          "deletedAt": null,
+          "importedBy": [],
+          "recordTags": []
+        }
+      ]
+    }
+  ],
+  "exported_tags": []
+}
